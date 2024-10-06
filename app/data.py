@@ -27,7 +27,7 @@ class Database:
         # Initialize MongoClient with TLS CA certificate for a secure connection
         self.client = MongoClient(db_url, tlsCAFile=certifi.where())
         self.db = self.client['Cluster0']  # Database Name
-        self.collection = self.db['your_collection_name']  # Replace with your actual collection name
+        self.collection = self.db['MonsterSquadOne']  # Collection Name
 
     def seed(self, amount: int):
         """
