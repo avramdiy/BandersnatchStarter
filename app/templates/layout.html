@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>Bandersnatch</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/colors.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+
+    <!-- Add CSS for collapsible sections -->
+    <style>
+        /* Style the collapsible button */
+        .collapsible {
+            background-color: #777;
+            color: rgb(0, 0, 0);
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+            border-radius: 5px;
+            margin-bottom: 5px; /* Add some space between buttons */
+        }
+
+        /* Style the collapsible content */
+        .content {
+            display: none;
+            overflow: hidden;
+            background-color: #f1f1f1;
+            padding: 10px;
+        }
+
+        /* Style the scrollable content */
+        .scrollable-content {
+            max-height: 500px; /* Adjust height as needed */
+            overflow-y: auto; /* Add vertical scrolling */
+        }
+    </style>
+
+    {% block scripts %}
+    {% endblock %}
+</head>
+<body>
+<header>
+    <h1><a href="/">Bandersnatch</a></h1>
+</header>
+<nav>
+    <ul>
+        <li><a href="{{ url_for('home') }}">Home</a></li>
+        <li><a href="{{ url_for('data') }}">Data</a></li>
+        <li><a href="{{ url_for('view') }}">View</a></li>
+        <li><a href="{{ url_for('model') }}">Model</a></li>
+    </ul>
+</nav>
+<article>
+    {% block content %}
+    {% endblock %}
+</article>
+<footer><p>Copyright © 2023 BloomTech Labs</p></footer>
+
+<!-- Add JavaScript for collapsible functionality -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var coll = document.getElementsByClassName("collapsible");
+        for (var i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = this.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

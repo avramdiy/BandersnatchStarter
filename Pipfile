@@ -1,0 +1,30 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+altair = "*"
+certifi = "*"
+flask = "*"
+fortuna = {path = "C:\\Users\\Ev\\Desktop\\Bandersnatch\\Fortuna-5.1.5-cp311-cp311-win_amd64.whl"}
+gunicorn = "*"
+jinja2 = "*"
+joblib = "*"
+jupyter = "*"
+numpy = "*"
+monsterlab = "*"
+pandas = "*"
+python-dotenv = "*"
+scikit-learn = "*"
+scipy = "*"
+fastapi = "*"
+torch = "*"
+"plotly.express" = "*"
+dotenv = "*"
+pymongo = {extras = ["srv"], version = "==3.11"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

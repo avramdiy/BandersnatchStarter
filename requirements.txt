@@ -1,0 +1,17 @@
+altair
+certifi
+Flask
+gunicorn
+Jinja2
+joblib
+jupyter
+numpy
+MonsterLab
+pandas
+pymongo[srv]
+python-dotenv
+scikit-learn
+scipy
+FastAPI #stretchgoal
+torch #stretchgoal PyTorch
+plotly.express #stretchgoal
