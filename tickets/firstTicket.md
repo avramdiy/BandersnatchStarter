@@ -39,20 +39,20 @@ The `main.py` file has a global variable `SPRINT`. You should set this variable 
 - [X] Check .env in .gitignore
 
 ### 2. Functionality
-- [ ] The seed() function correctly inserts the specified number of documents into the collection.
-- [ ] The reset() function correctly deletes all documents from the collection.
-- [ ] The count() function correctly returns the number of documents in the collection.
-- [ ] The dataframe() function correctly returns a DataFrame containing all documents in the collection.
-- [ ] The html_table() function correctly returns an HTML table representation of the DataFrame, or None if the collection is empty.
+- [X] The seed() function correctly inserts the specified number of documents into the collection.
+- [X] The reset() function correctly deletes all documents from the collection.
+- [X] The count() function correctly returns the number of documents in the collection.
+- [X] The dataframe() function correctly returns a DataFrame containing all documents in the collection.
+- [X] The html_table() function correctly returns an HTML table representation of the DataFrame, or None if the collection is empty.
 
 ### 3. Security
-- [ ] The database URL is stored in an environment variable and is not hardcoded into the component.
+- [X] The database URL is stored in an environment variable and is not hardcoded into the component.
 - [ ] The TLS certificate authority file is properly configured and used to establish a secure connection to the database.
 
 ### 4. Documentation & Style
-- [ ] The code includes docstrings explaining the purpose and behavior of each component.
-- [ ] The code includes no extraneous comments and no inline print statements.
-- [ ] The code follows PEP style guide.
+- [X] The code includes docstrings explaining the purpose and behavior of each component.
+- [X] The code includes no extraneous comments and no inline print statements.
+- [X] The code follows PEP style guide.
 
 #### Example Database Interface: CRUD Operations
 ```python
