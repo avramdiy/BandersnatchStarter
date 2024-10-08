@@ -5,6 +5,7 @@ import certifi
 from dotenv import load_dotenv
 from MonsterLab import Monster
 from random import randint, uniform, choice
+from bson import ObjectId  # Import ObjectId
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -71,10 +72,18 @@ class Database:
     def dataframe(self) -> DataFrame:
         """
         Retrieves all documents from the collection and returns them as a pandas DataFrame.
+        Converts ObjectId to string for all documents.
 
         :return: A DataFrame containing all documents, or an empty DataFrame if none exist.
         """
         data = list(self.collection.find())
+        
+        # Convert ObjectId fields to string in the data
+        for doc in data:
+            for key, value in doc.items():
+                if isinstance(value, ObjectId):
+                    doc[key] = str(value)
+
         if data:
             return DataFrame(data)
         else:

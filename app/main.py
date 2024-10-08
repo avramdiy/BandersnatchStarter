@@ -9,7 +9,7 @@ from pandas import DataFrame
 from base64 import b64decode
 from Fortuna import random_int, random_float
 from app.data import Database
-from app.graph import chart
+from app.graph import create_chart
 from app.machine import Machine
 
 # Load environment variables from the .env file
@@ -57,13 +57,15 @@ def view():
     Renders the view page with a graph based on selected axes and target.
     """
     db = Database()
+    print("Database connected")
+
     options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
     x_axis = request.values.get("x_axis") or options[1]
     y_axis = request.values.get("y_axis") or options[2]
     target = request.values.get("target") or options[4]
     
     # Generate the chart based on the selected axes and target
-    graph = chart(
+    graph = create_chart(
         df=db.dataframe(),
         x=x_axis,
         y=y_axis,
