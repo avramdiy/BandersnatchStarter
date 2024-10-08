@@ -140,5 +140,20 @@ def reset():
     db.reset()
     return redirect(url_for('data'))
 
+@app.route("/api/chart", methods=["GET"])
+def chart_route():
+    """
+    API route to generate and return a chart as JSON.
+    """
+    x_axis = request.args.get('x')
+    y_axis = request.args.get('y')
+    target = request.args.get('target')
+
+    db = Database()
+    data = db.dataframe()  # Fetch the DataFrame from your database
+
+    chart = create_chart(data, x_axis, y_axis, target)
+    return jsonify(chart.to_json()), 200  # Return the serialized chart as JSON
+
 if __name__ == '__main__':
     app.run()
