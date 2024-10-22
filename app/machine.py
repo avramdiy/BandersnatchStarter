@@ -23,7 +23,7 @@ class Machine:
         if model_type == "logistic":
             self.model = LogisticRegression(max_iter=200)
         elif model_type == "random_forest":
-            self.model = RandomForestClassifier(n_estimators=100)
+            self.model = RandomForestClassifier()
         else:
             raise ValueError("Invalid model type. Choose 'logistic' or 'random_forest'.")
 
