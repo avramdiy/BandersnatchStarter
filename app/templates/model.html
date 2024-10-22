@@ -1,8 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
     <h1>Bandersnatch Model</h1>
-    <p>{{ info | safe }}</p>
-
+    
+    <h2>Model Information</h2>
+    <p><strong>Model Type:</strong> {{ info['model_type'] }}</p>
+    <p><strong>Model Parameters:</strong></p>
+    <ul>
+        {% for param, value in info['params'].items() %}
+            <li><strong>{{ param }}:</strong> {{ value }}</li>
+        {% endfor %}
+    </ul>
+    
     <h2>Prediction Basis</h2>
     <form id="form" method="post" action="{{ url_for('model') }}">
         <p><label>

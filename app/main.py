@@ -10,7 +10,7 @@ from base64 import b64decode
 from Fortuna import random_int, random_float
 from app.data import Database
 from app.graph import create_chart
-from app.machine import Machine
+from app.machine import Machine  # Updated Machine class
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -91,23 +91,42 @@ def model():
     options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
     filepath = os.path.join("app", "model.joblib")
     
+    # Check if model file exists
     if not os.path.exists(filepath):
-        df = db.dataframe()
-        machine = Machine(df[options])
-        machine.save(filepath)
+        df = db.dataframe()  # Assuming this returns a DataFrame with a 'target' column
+        # Train the model using the updated Machine class
+        machine = Machine(df[options])  # Ensure df contains the correct columns
+        machine.save(filepath)  # Save the trained model to model.joblib
     else:
-        machine = Machine.open(filepath)
+        machine = Machine.open(filepath)  # Load the trained model from file
 
+    # Generate random or user-supplied stats for prediction
     stats = [round(random_float(1, 250), 2) for _ in range(3)]
     level = request.values.get("level", type=int) or random_int(1, 20)
     health = request.values.get("health", type=float) or stats.pop()
     energy = request.values.get("energy", type=float) or stats.pop()
     sanity = request.values.get("sanity", type=float) or stats.pop()
     
-    prediction, confidence = machine(DataFrame(
-        [dict(zip(options, (level, health, energy, sanity)))]
-    ))
-    info = machine.info()
+    # Create a DataFrame for the feature basis
+    feature_basis = DataFrame([{
+        'Level': level,
+        'Health': health,
+        'Energy': energy,
+        'Sanity': sanity
+    }])
+
+    # Debugging: Print feature_basis
+    print("Feature basis DataFrame:")
+    print(feature_basis)
+
+    # Use the Machine class to make predictions
+    try:
+        prediction, confidence = machine.predict(feature_basis)  # Call the predict method
+    except Exception as e:
+        print("Error during prediction:", e)
+        return "Error during prediction", 500
+
+    info = machine.info()  # Get information about the model
     
     return render_template(
         "model.html",
@@ -119,6 +138,7 @@ def model():
         prediction=prediction,
         confidence=f"{confidence:.2%}",
     )
+
 
 @app.route("/seed", methods=["POST"])
 def seed():
