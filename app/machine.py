@@ -1,84 +1,181 @@
+import os
 import joblib
-from sklearn.linear_model import LogisticRegression
+import pandas as pd
+from pandas import DataFrame
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from typing import Tuple, List
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Machine:
+    """
+    A Machine class for managing a RandomForestClassifier model,
+    training it, saving it, and making predictions with probabilities.
+    """
 
-    def __init__(self, df, model_type="logistic"):
+    models = []  # Class-level attribute to store instances of Machine
+    model_directory = 'C:\\Users\\Ev\\Desktop\\Bandersnatch\\models'  # Updated path to store models
+
+    def __init__(self, data: DataFrame, target_column: str = "Rarity", n_estimators: int = 100, model_name: str = None):
         """
-        Initialize the machine learning model.
-        :param df: DataFrame containing features and target.
-        :param model_type: The type of model to use ('logistic' or 'random_forest').
+        Initializes the Machine with a RandomForestClassifier model, sets up feature
+        and target data, and trains the model.
+
+        :param data: DataFrame containing the dataset, including features and target.
+        :param target_column: The name of the target column to predict.
+        :param n_estimators: Number of trees in the forest (default is 100).
+        :param model_name: Optional name for the model, used for saving.
         """
-        # Ensure the target column exists
-        if 'Rarity' not in df.columns:
-            raise ValueError("Target column 'target' not found in the DataFrame.")
+        self.target_column = target_column
 
-        # Split the DataFrame into features (X) and target (y)
-        self.features = df.drop(columns=['Rarity'])  # Replace 'target' with the actual target column name
-        self.target = df['Rarity']  # Replace 'target' with the actual target column name
+        # Drop unnecessary columns, ensuring they exist
+        features = data.drop(columns=[target_column, '_id'], errors='ignore')
+        self.target = data[target_column]
 
-        # Initialize the model based on the selected type
-        if model_type == "logistic":
-            self.model = LogisticRegression(max_iter=200)
-        elif model_type == "random_forest":
-            self.model = RandomForestClassifier()
-        else:
-            raise ValueError("Invalid model type. Choose 'logistic' or 'random_forest'.")
+        # One-hot encode categorical features
+        self.features = pd.get_dummies(features, drop_first=True)
+        logging.info(f"Features shape after encoding: {self.features.shape}")
 
-        # Fit the model with the provided data
-        self.model.fit(self.features, self.target)
+        # Initialize the RandomForestClassifier model with n_estimators
+        self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
+        logging.info(f"Initialized {self.model.__class__.__name__} with {n_estimators} estimators.")
 
-    def predict(self, feature_basis):
+        # Train the model
+        self.train()
+
+        # Store the instance in the models list
+        Machine.models.append(self)
+
+        # Save the model if a model name is provided
+        if model_name:
+            self.save(model_name)
+
+    def train(self):
         """
-        Make a prediction based on the provided feature data.
-        :param feature_basis: DataFrame containing the feature data.
-        :return: A tuple of (prediction, probability).
+        Trains the RandomForestClassifier model on the provided feature and target data.
         """
-        # Ensure feature_basis has the correct columns
-        feature_basis = feature_basis.reindex(columns=self.features.columns, fill_value=0)
+        X_train, X_test, y_train, y_test = train_test_split(self.features, self.target, test_size=0.2, random_state=42)
+        logging.info(f"Training data shape: {X_train.shape}, Test data shape: {X_test.shape}")
+        self.model.fit(X_train, y_train)
 
-        # Debugging: Print the feature_basis and its columns
-        print("Feature basis for prediction:")
-        print(feature_basis)
+        # Evaluate model accuracy on test data
+        y_pred = self.model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        logging.info(f"Model trained with accuracy: {accuracy:.2%}")
 
-        # Predict the class
-        prediction = self.model.predict(feature_basis)
-
-        # Predict the probabilities
-        probability = self.model.predict_proba(feature_basis)  # Get probabilities for all classes
-
-        # Debugging: Print the prediction and probabilities
-        print("Prediction:", prediction)
-        print("Probabilities:", probability)
-
-        # Return prediction and the max probability for the predicted class
-        return prediction[0], max(probability[0])  # Return first element for prediction and max probability
-
-    def save(self, filepath):
+    def save(self, model_name: str):
         """
-        Save the trained model to a file.
-        :param filepath: The file path where the model will be saved.
+        Saves the trained model to the specified filepath.
+
+        :param model_name: Name for the saved model (used for filename).
         """
+        filepath = os.path.join(self.model_directory, f"{model_name}.joblib")
+        logging.info(f"Saving model to: {filepath}")
         joblib.dump(self.model, filepath)
+        logging.info(f"Model saved to {filepath}")
 
-    @staticmethod
-    def open(filepath):
-        """
-        Load a model from a file.
-        :param filepath: The file path where the model is stored.
-        :return: The loaded model.
-        """
-        return joblib.load(filepath)
+        # Verify if the model has been saved successfully
+        if not os.path.exists(filepath):
+            raise Exception(f"Failed to save the model at {filepath}")
 
-    def info(self):
+    @classmethod
+    def get_model_names(cls) -> List[str]:
         """
-        Return information about the model.
-        :return: A dictionary containing model type and parameters.
+        Returns the names of the stored models based on .joblib files.
+
+        :return: List of model names.
         """
-        return {
-            "model_type": type(self.model).__name__,
-            "params": self.model.get_params(),  # Get the model parameters
-            "initialized_at": datetime.now()
-        }
+        if not os.path.exists(cls.model_directory):
+            return []
+
+        return [f[:-7] for f in os.listdir(cls.model_directory) if f.endswith('.joblib')]
+
+    @classmethod
+    def open(cls, model_name: str):
+        """
+        Loads a model from the specified model name, ensuring it is a RandomForestClassifier,
+        and initializes a Machine instance.
+
+        :param model_name: Name of the model to be loaded (without extension).
+        :return: A Machine instance with the loaded model.
+        """
+        filepath = os.path.join(cls.model_directory, f"{model_name}.joblib")
+        logging.info(f"Loading model from: {filepath}")
+
+        try:
+            model = joblib.load(filepath)
+        except FileNotFoundError:
+            raise Exception(f"Model file {filepath} not found.")
+        except Exception as e:
+            raise Exception(f"An error occurred while loading the model: {e}")
+
+        # Verify the model type is RandomForestClassifier
+        if not isinstance(model, RandomForestClassifier):
+            raise TypeError("Loaded model is not a RandomForestClassifier. Please check the saved model file.")
+
+        machine_instance = cls.__new__(cls)  # Create instance without calling __init__
+        machine_instance.model = model
+        Machine.models.append(machine_instance)  # Add to models list
+        logging.info(f"Model {model_name} loaded successfully.")
+        return machine_instance
+
+    def predict(self, features: DataFrame) -> Tuple[str, float]:
+        """
+        Makes a prediction on the provided feature data and returns the predicted class
+        and probability.
+
+        :param features: DataFrame containing the feature data for prediction.
+        :return: Tuple containing the predicted class and its probability.
+        """
+        # One-hot encode the incoming features to match training data format
+        features_encoded = pd.get_dummies(features, drop_first=True)
+        features_encoded = features_encoded.reindex(columns=self.features.columns, fill_value=0)
+
+        prediction = self.model.predict(features_encoded)[0]
+        probability = self.model.predict_proba(features_encoded).max()
+        logging.info(f"Prediction: {prediction}, Probability: {probability:.2%}")
+        return prediction, probability
+
+    def predict_proba(self, features: DataFrame) -> List[List[float]]:
+        """
+        Returns the probabilities of each class for the provided feature data.
+
+        :param features: DataFrame containing the feature data for prediction.
+        :return: List of probabilities for each class.
+        """
+        # One-hot encode the incoming features to match training data format
+        features_encoded = pd.get_dummies(features, drop_first=True)
+        features_encoded = features_encoded.reindex(columns=self.features.columns, fill_value=0)
+
+        probabilities = self.model.predict_proba(features_encoded)
+        logging.info(f"Probabilities: {probabilities.tolist()}")
+        return probabilities.tolist()  # Return as a list of probabilities
+
+    def __call__(self, features: DataFrame) -> Tuple[str, float]:
+        """
+        Calls the predict method to make predictions on the provided feature data.
+
+        :param features: DataFrame containing the feature data for prediction.
+        :return: Tuple containing the predicted class and its probability.
+        """
+        return self.predict(features)
+
+    def info(self) -> str:
+        """
+        Returns information about the RandomForestClassifier model, including its parameters.
+
+        :return: A formatted string with model details.
+        """
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        model_info = f"Base Model: {self.model.__class__.__name__}\n"
+        model_info += f"Description: RandomForestClassifier Model with {len(self.model.estimators_)} trees.\n"
+        model_info += f"Timestamp: {timestamp}\n"
+        model_info += "Parameters:\n" + "\n".join([f"{key}: {value}" for key, value in self.model.get_params().items()])
+        logging.info("Model Info:")
+        logging.info(model_info)
+        return model_info

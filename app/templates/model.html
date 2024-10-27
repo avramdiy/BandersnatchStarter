@@ -1,42 +1,74 @@
-{% extends "layout.html" %}
-{% block content %}
-    <h1>Bandersnatch Model</h1>
-    
-    <h2>Model Information</h2>
-    <p><strong>Model Type:</strong> {{ info['model_type'] }}</p>
-    <p><strong>Model Parameters:</strong></p>
-    <ul>
-        {% for param, value in info['params'].items() %}
-            <li><strong>{{ param }}:</strong> {{ value }}</li>
-        {% endfor %}
-    </ul>
-    
-    <h2>Prediction Basis</h2>
-    <form id="form" method="post" action="{{ url_for('model') }}">
-        <p><label>
-            Level: <input name="level" value="{{ level }}"/>
-        </label></p>
-        <br class="clear">
-        <p><label>
-            Health: <input name="health" value="{{ health }}"/>
-        </label></p>
-        <br class="clear">
-        <p><label>
-            Energy: <input name="energy" value="{{ energy }}"/>
-        </label></p>
-        <br class="clear">
-        <p><label>
-            Sanity: <input name="sanity" value="{{ sanity }}"/>
-        </label></p>
-        <br class="clear">
-        <button type="submit">Predict Rarity</button>
-        <br class="clear">
-    </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Model Management</h1>
 
-    <h3>
-        Prediction: {{ prediction }}
-        <br>
-        Confidence: {{ confidence }}
-    </h3>
+        <form method="POST" action="{{ url_for('model') }}">
+            <div class="form-group">
+                <label for="num_trees">Number of Trees:</label>
+                <input type="number" class="form-control" name="num_trees" id="num_trees" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Model</button>
+        </form>
 
-{% endblock %}
+        <hr>
+
+        <h2>Load Existing Model</h2>
+        <form method="GET" action="{{ url_for('model') }}">
+            <div class="form-group">
+                <label for="model_name">Select Model:</label>
+                <select class="form-control" name="model_name" id="model_name">
+                    {% for model_name in model_names %}
+                        <option value="{{ model_name }}">{{ model_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-secondary">Load Model</button>
+        </form>
+
+        <hr>
+
+        {% if selected_model_info %}
+            <h3>Selected Model Info</h3>
+            <pre>{{ selected_model_info }}</pre>
+        {% endif %}
+
+        {% if selected_model_probs %}
+            <h3>Prediction Probabilities</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Probability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prob in selected_model_probs %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ prob }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if prediction_result %}
+            <h3>Prediction Result</h3>
+            <p>Class: {{ prediction_result.class }}</p>
+            <p>Probability: {{ prediction_result.probability }}</p>
+        {% endif %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
