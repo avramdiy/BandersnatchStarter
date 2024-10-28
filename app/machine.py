@@ -34,7 +34,7 @@ class Machine:
         self.target_column = target_column
 
         # Drop unnecessary columns, ensuring they exist
-        features = data.drop(columns=[target_column, '_id', 'Type'], errors='ignore')  # Drop 'Type' too
+        features = data.drop(columns=[target_column, '_id', 'Type', 'Name'], errors='ignore')  # Drop 'Type' too
         self.target = data[target_column]
 
         # One-hot encode categorical features

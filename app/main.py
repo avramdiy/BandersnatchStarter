@@ -121,36 +121,35 @@ def view():
 def model():
     global loaded_data
     selected_model_info = None
-    selected_model_probs = None  # To store probabilities
-    prediction_result = None  # To store prediction result
+    selected_model_probs = None
+    prediction_result = None
 
-    # Load models from the directory to populate the dropdown
+    # Load available models for dropdown
     models = load_models()
 
     if request.method == 'POST':
-        # Logic to create a new model
+        # Handle model creation with specified trees
         try:
             num_trees = int(request.form['num_trees'])
-            # Create a new instance of Machine with the specified number of trees
             if loaded_data is not None:
-                model_name = f"model_{len(models) + 1}"  # Generate a model name
+                model_name = f"model_{len(models) + 1}"
                 machine_instance = Machine(loaded_data, target_column='Rarity', n_estimators=num_trees, model_name=model_name)
-                models.append(machine_instance)  # Add new model to the list
-                machine_instance.save(model_name)  # Save the new model
-
+                models.append(machine_instance)
+                machine_instance.save(model_name)
         except ValueError:
             logging.error("Invalid number of trees specified.")
             return redirect(url_for('model'))
 
-        return redirect(url_for('model'))  # Redirect back to the model page to see updated models
+        return redirect(url_for('model'))
 
-    # Load models only if a specific model is selected from the dropdown
-    if request.args.get('model_name'):
-        selected_model_index = int(request.args.get('model_name').split(' ')[-1]) - 1  # Get index from the dropdown
+    # Process model selection from dropdown
+    selected_model_index = request.args.get('model_name')
+    if selected_model_index:
+        selected_model_index = int(selected_model_index.split(' ')[-1]) - 1
         if 0 <= selected_model_index < len(models):
             selected_model = models[selected_model_index]
 
-            # Get model information directly from the attributes
+            # Capture basic model information
             selected_model_info = {
                 "n_estimators": getattr(selected_model, 'n_estimators', 'N/A'),
                 "max_depth": getattr(selected_model, 'max_depth', 'N/A'),
@@ -158,66 +157,27 @@ def model():
                 "classes": getattr(selected_model, 'classes_', 'N/A'),
             }
 
-            # Get the class probabilities for the selected model
-            if loaded_data is not None:
-                # Check the actual columns in loaded_data
-                logging.info(f"Loaded data columns: {loaded_data.columns.tolist()}")
+            # Ensure the data only contains feature columns
+            feature_columns = loaded_data.drop(columns=['Rarity', '_id', 'Type', 'Name'], errors='ignore')
+            try:
+                selected_model_probs = selected_model.predict_proba(feature_columns)
+                prediction_result = {
+                    "class": selected_model.predict(feature_columns.iloc[[0]])[0],
+                    "probability": selected_model_probs[0].max() if selected_model_probs.size > 0 else None
+                }
+            except Exception as e:
+                logging.error(f"Prediction error: {e}")
+                prediction_result = {"class": None, "probability": None}
 
-                # Drop the 'Name' column if it exists
-                if 'Name' in loaded_data.columns:
-                    loaded_data.drop(columns=['Name'], inplace=True)
-                    logging.info("Dropped 'Name' column from loaded data.")
-
-                # Generate feature names based on remaining columns
-                feature_names = loaded_data.columns.tolist()  # Use remaining columns as feature names
-                logging.info(f"Generated feature names: {feature_names}")
-
-                # Filter loaded_data to only include relevant features
-                try:
-                    loaded_data = loaded_data[feature_names]  # Ensure we're filtering only relevant features
-                except KeyError as e:
-                    logging.error(f"KeyError: {str(e)}. Ensure that feature names match loaded_data columns.")
-                    return render_template(
-                        'model.html',
-                        model_names=[f'Model {i + 1}' for i in range(len(models))],
-                        selected_model_info=selected_model_info,
-                        selected_model_probs=None,
-                        prediction_result=None
-                    )
-
-                # Proceed with prediction
-                try:
-                    selected_model_probs = selected_model.predict_proba(loaded_data)  # Pass in the loaded data for probabilities
-
-                    # Ensure the output is a NumPy array if it's a list
-                    if isinstance(selected_model_probs, list):
-                        selected_model_probs = np.array(selected_model_probs)
-
-                    # Check if selected_model_probs is not None and has more than 0 elements
-                    if selected_model_probs is not None and selected_model_probs.size > 0:
-                        prediction_result = {
-                            "class": selected_model.predict(loaded_data.iloc[[0]])[0],  # Get predicted class
-                            "probability": selected_model_probs[0].max()  # Get maximum probability from the first sample
-                        }
-                    else:
-                        prediction_result = {
-                            "class": None,
-                            "probability": None
-                        }
-                except Exception as e:
-                    logging.error(f"Prediction error: {e}")
-                    prediction_result = {
-                        "class": None,
-                        "probability": None
-                    }
-
+    # Render the template with models and prediction information
     return render_template(
         'model.html',
-        model_names=[f'Model {i + 1}' for i in range(len(models))],  # Create model names dynamically
+        model_names=[f'Model {i + 1}' for i in range(len(models))],
         selected_model_info=selected_model_info,
         selected_model_probs=selected_model_probs,
         prediction_result=prediction_result
     )
+
 
 
 

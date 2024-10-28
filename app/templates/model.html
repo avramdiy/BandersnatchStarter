@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Model Management</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Styling for scrollable table container */
+        .scrollable-table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
@@ -40,24 +50,26 @@
             <pre>{{ selected_model_info }}</pre>
         {% endif %}
 
-        {% if selected_model_probs %}
+        {% if selected_model_probs is not none and selected_model_probs|length > 0 %}
             <h3>Prediction Probabilities</h3>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Class</th>
-                        <th>Probability</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prob in selected_model_probs %}
+            <div class="scrollable-table-container">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>{{ loop.index }}</td>
-                            <td>{{ prob }}</td>
+                            <th>Class</th>
+                            <th>Probability</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for prob in selected_model_probs %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ prob }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% endif %}
 
         {% if prediction_result %}
