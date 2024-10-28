@@ -160,15 +160,23 @@ def model():
 
             # Get the class probabilities for the selected model
             if loaded_data is not None:
-                # Ensure the input DataFrame matches the model's expected feature set
-                feature_names = [f'Name_{name}' for name in loaded_data['Name'].unique()]  # One-hot encode the names
-                if set(feature_names).issubset(loaded_data.columns):
-                    loaded_data = loaded_data[feature_names]
+                # Check the actual columns in loaded_data
+                logging.info(f"Loaded data columns: {loaded_data.columns.tolist()}")
 
-                # Check for missing features
-                missing_features = set(selected_model.feature_names_in_) - set(loaded_data.columns)
-                if missing_features:
-                    logging.error(f"Missing features for prediction: {missing_features}")
+                # Drop the 'Name' column if it exists
+                if 'Name' in loaded_data.columns:
+                    loaded_data.drop(columns=['Name'], inplace=True)
+                    logging.info("Dropped 'Name' column from loaded data.")
+
+                # Generate feature names based on remaining columns
+                feature_names = loaded_data.columns.tolist()  # Use remaining columns as feature names
+                logging.info(f"Generated feature names: {feature_names}")
+
+                # Filter loaded_data to only include relevant features
+                try:
+                    loaded_data = loaded_data[feature_names]  # Ensure we're filtering only relevant features
+                except KeyError as e:
+                    logging.error(f"KeyError: {str(e)}. Ensure that feature names match loaded_data columns.")
                     return render_template(
                         'model.html',
                         model_names=[f'Model {i + 1}' for i in range(len(models))],
@@ -177,6 +185,7 @@ def model():
                         prediction_result=None
                     )
 
+                # Proceed with prediction
                 try:
                     selected_model_probs = selected_model.predict_proba(loaded_data)  # Pass in the loaded data for probabilities
 
@@ -209,6 +218,8 @@ def model():
         selected_model_probs=selected_model_probs,
         prediction_result=prediction_result
     )
+
+
 
 @app.route("/seed", methods=["POST"])
 def seed():

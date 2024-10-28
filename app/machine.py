@@ -19,7 +19,7 @@ class Machine:
     """
 
     models = []  # Class-level attribute to store instances of Machine
-    model_directory = 'C:\\Users\\Ev\\Desktop\\Bandersnatch\\models'  # Updated path to store models
+    model_directory = 'C:\\Users\\Ev\\Desktop\\Bandersnatch\\models'  # Path to store models
 
     def __init__(self, data: DataFrame, target_column: str = "Rarity", n_estimators: int = 100, model_name: str = None):
         """
@@ -34,7 +34,7 @@ class Machine:
         self.target_column = target_column
 
         # Drop unnecessary columns, ensuring they exist
-        features = data.drop(columns=[target_column, '_id'], errors='ignore')
+        features = data.drop(columns=[target_column, '_id', 'Type'], errors='ignore')  # Drop 'Type' too
         self.target = data[target_column]
 
         # One-hot encode categorical features
@@ -91,6 +91,7 @@ class Machine:
         :return: List of model names.
         """
         if not os.path.exists(cls.model_directory):
+            logging.warning(f"Model directory {cls.model_directory} does not exist.")
             return []
 
         return [f[:-7] for f in os.listdir(cls.model_directory) if f.endswith('.joblib')]
@@ -110,8 +111,10 @@ class Machine:
         try:
             model = joblib.load(filepath)
         except FileNotFoundError:
+            logging.error(f"Model file {filepath} not found.")
             raise Exception(f"Model file {filepath} not found.")
         except Exception as e:
+            logging.error(f"An error occurred while loading the model: {e}")
             raise Exception(f"An error occurred while loading the model: {e}")
 
         # Verify the model type is RandomForestClassifier
@@ -126,16 +129,19 @@ class Machine:
 
     def predict(self, features: DataFrame) -> Tuple[str, float]:
         """
-        Makes a prediction on the provided feature data and returns the predicted class
-        and probability.
+        Makes predictions on the provided feature data.
 
         :param features: DataFrame containing the feature data for prediction.
         :return: Tuple containing the predicted class and its probability.
         """
+
         # One-hot encode the incoming features to match training data format
         features_encoded = pd.get_dummies(features, drop_first=True)
+
+        # Reindex the columns to match the training feature set
         features_encoded = features_encoded.reindex(columns=self.features.columns, fill_value=0)
 
+        # Make predictions
         prediction = self.model.predict(features_encoded)[0]
         probability = self.model.predict_proba(features_encoded).max()
         logging.info(f"Prediction: {prediction}, Probability: {probability:.2%}")
@@ -148,12 +154,21 @@ class Machine:
         :param features: DataFrame containing the feature data for prediction.
         :return: List of probabilities for each class.
         """
+
         # One-hot encode the incoming features to match training data format
         features_encoded = pd.get_dummies(features, drop_first=True)
+
+        # Reindex the columns to match the training feature set
         features_encoded = features_encoded.reindex(columns=self.features.columns, fill_value=0)
 
+        # Log the shape and columns of the encoded features for debugging
+        logging.info(f"Encoded features shape: {features_encoded.shape}")
+        logging.info(f"Encoded features columns: {features_encoded.columns.tolist()}")
+
+        # Get the probabilities of each class
         probabilities = self.model.predict_proba(features_encoded)
         logging.info(f"Probabilities: {probabilities.tolist()}")
+
         return probabilities.tolist()  # Return as a list of probabilities
 
     def __call__(self, features: DataFrame) -> Tuple[str, float]:
@@ -163,7 +178,10 @@ class Machine:
         :param features: DataFrame containing the feature data for prediction.
         :return: Tuple containing the predicted class and its probability.
         """
-        return self.predict(features)
+        # Call the predict method and return the prediction and its probability
+        prediction, probability = self.predict(features)
+        logging.info(f"Called predict: {prediction}, Probability: {probability:.2%}")
+        return prediction, probability
 
     def info(self) -> str:
         """
@@ -176,6 +194,8 @@ class Machine:
         model_info += f"Description: RandomForestClassifier Model with {len(self.model.estimators_)} trees.\n"
         model_info += f"Timestamp: {timestamp}\n"
         model_info += "Parameters:\n" + "\n".join([f"{key}: {value}" for key, value in self.model.get_params().items()])
+        
         logging.info("Model Info:")
         logging.info(model_info)
+        
         return model_info
