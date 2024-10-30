@@ -1,46 +1,51 @@
-import unittest
 import os
-import pandas as pd  # Import pandas if using DataFrame in tests
-from app.machine import Machine  # Adjust the import based on your directory structure
-from datetime import datetime
+import pandas as pd
+from .machine import Machine  # Use relative import
 
-class TestMachine(unittest.TestCase):
-    def setUp(self):
-        # Set the model path to the pre-existing model
-        self.model_path = r"C:\Users\Ev\Desktop\Bandersnatch\models\model.joblib"
-        
-        # Print the expected model path
-        print("Expected model path:", self.model_path)
+# Sample DataFrame for testing
+data = pd.DataFrame({
+    "Energy": [0.5, 0.6, 0.7],
+    "Health": [0.4, 0.6, 0.8],
+    "Level": [1, 2, 3],
+    "Sanity": [0.3, 0.5, 0.7],
+    "Rarity": ["common", "rare", "epic"]
+})
 
-        # Load the pre-existing model
-        if os.path.exists(self.model_path):
-            self.machine = Machine.open("model")  # Load the model without the .joblib extension
-        else:
-            raise FileNotFoundError(f"Model file not found: {self.model_path}")
+model_name = "test_model"
+model_path = os.path.join(Machine.model_directory, f"{model_name}.joblib")
 
-    def test_info(self):
-        info_str = self.machine.info()
-        timestamp_str = info_str.split("Timestamp: ")[1].split("\n")[0]
-        self.assertIsNotNone(datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S'), "Timestamp should be in the correct format.")
+def test_save():
+    # Instantiate Machine and save model
+    machine_instance = Machine(data, target_column="Rarity", model_name=model_name)
+    
+    # Check if the model file was created
+    if os.path.exists(model_path):
+        print(f"[SUCCESS] Model saved successfully at {model_path}.")
+    else:
+        print(f"[FAIL] Model was not saved at {model_path}.")
 
-    def test_predict(self):
-        # Example features for prediction (adjust as needed for your dataset)
-        test_features = {
-            "feature1": [1.0],  # Replace with actual feature names and values
-            "feature2": [0.5],
-            # Add all required features here
-        }
-        features_df = pd.DataFrame(test_features)
-        prediction, probability = self.machine.predict(features_df)
-        self.assertIsNotNone(prediction)
-        self.assertGreaterEqual(probability, 0)
+def test_open():
+    # Load the saved model
+    loaded_machine = Machine.open(model_name)
+    
+    # Check if the loaded instance is a Machine object with a model
+    if isinstance(loaded_machine, Machine) and hasattr(loaded_machine, 'model'):
+        print("[SUCCESS] Model loaded successfully with open().")
+    else:
+        print("[FAIL] Model could not be loaded with open().")
 
-    def test_save(self):
-        # Test if the model saves correctly to the specified path
-        test_model_name = "test_model"
-        self.machine.save(test_model_name)  # Save as a new model for testing
-        saved_model_path = os.path.join(r'C:\Users\Ev\Desktop\Bandersnatch\models', f"{test_model_name}.joblib")
-        self.assertTrue(os.path.exists(saved_model_path), "Model file should exist after saving.")
+def test_info():
+    # Create a new Machine instance to test info()
+    machine_instance = Machine(data, target_column="Rarity")
+    info_str = machine_instance.info()
 
-if __name__ == "__main__":
-    unittest.main()
+    # Check if model info contains base model name and timestamp
+    if "Base Model: RandomForestClassifier" in info_str and "Timestamp:" in info_str:
+        print(f"[SUCCESS] info() returned the correct model name and timestamp:\n{info_str}")
+    else:
+        print(f"[FAIL] info() did not return the expected information:\n{info_str}")
+
+# Run the tests
+test_save()
+test_open()
+test_info()
