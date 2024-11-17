@@ -51,9 +51,14 @@ class Machine:
         # Store the instance in the models list
         Machine.models.append(self)
 
-        # Save the model if a model name is provided
-        if model_name:
-            self.save(model_name)
+        # If no model name is provided, prompt the user for one
+        if not model_name:
+            model_name = input("Enter a name for your model (or press Enter to auto-generate): ")
+            if not model_name:
+                model_name = f"model_{len(Machine.models)}"  # Default name
+
+        # Save the model with the chosen name
+        self.save(model_name)
 
     def train(self):
         """

@@ -33,24 +33,29 @@ def load_data():
 
 def load_models():
     """
-    Load models from the model directory.
+    Load models from the model directory, returning both models and their names.
     """
     if not os.path.exists(model_directory):
         logging.error(f"Model directory '{model_directory}' does not exist.")
-        return []
+        return [], []
 
     models = []
+    model_names = []  # List to store the model names
+
     for model_file in os.listdir(model_directory):
         if model_file.endswith('.joblib'):
             model_path = os.path.join(model_directory, model_file)
             try:
                 model = joblib.load(model_path)
+                model_name = model_file.split('.')[0]  # Use the file name as the model name
                 models.append(model)
-                logging.info(f"Loaded model from: {model_path}")
+                model_names.append(model_name)  # Store the model name
+                logging.info(f"Loaded model '{model_name}' from: {model_path}")
             except Exception as e:
                 logging.error(f"Error loading model from {model_path}: {e}")
 
-    return models
+    return models, model_names  # Return both the models and their names
+
 
 @app.route("/")
 def home():
@@ -124,28 +129,34 @@ def model():
     selected_model_probs = None
     prediction_result = None
 
-    # Load available models for dropdown
-    models = load_models()
+    # Load available models with custom names
+    models, model_names = load_models()  # Now loading both models and names
 
     if request.method == 'POST':
         # Handle model creation with specified trees
         try:
             num_trees = int(request.form['num_trees'])
+            model_name = request.form['model_name'].strip()  # Get custom model name from form
+            if not model_name:
+                model_name = f"model_{len(models) + 1}.joblib"  # Default name if no custom name is provided
+
             if loaded_data is not None:
-                model_name = f"model_{len(models) + 1}"
                 machine_instance = Machine(loaded_data, target_column='Rarity', n_estimators=num_trees, model_name=model_name)
                 models.append(machine_instance)
-                machine_instance.save(model_name)
+                machine_instance.save(model_name)  # Save the model with the custom name
+                logging.info(f"Model '{model_name}' created successfully.")
         except ValueError:
             logging.error("Invalid number of trees specified.")
             return redirect(url_for('model'))
 
-        return redirect(url_for('model'))
+        return redirect(url_for('model'))  # Reload page to show the updated list of models
 
     # Process model selection from dropdown
-    selected_model_index = request.args.get('model_name')
-    if selected_model_index:
-        selected_model_index = int(selected_model_index.split(' ')[-1]) - 1
+    selected_model_name = request.args.get('model_name')
+    selected_model_index = None
+    if selected_model_name:
+        # Find the selected model index based on the custom name
+        selected_model_index = model_names.index(selected_model_name)
         if 0 <= selected_model_index < len(models):
             selected_model = models[selected_model_index]
 
@@ -172,12 +183,11 @@ def model():
     # Render the template with models and prediction information
     return render_template(
         'model.html',
-        model_names=[f'Model {i + 1}' for i in range(len(models))],
+        model_names=model_names,  # Pass the custom names here
         selected_model_info=selected_model_info,
         selected_model_probs=selected_model_probs,
         prediction_result=prediction_result
     )
-
 
 
 
